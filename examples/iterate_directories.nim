@@ -8,7 +8,7 @@ const fsPath = "testfs.bin"
 
 proc main()=
   var f = open(fsPath, if fileExists(fsPath): fmReadWriteExisting else: fmReadWrite)
-  var lfs = LittleFs(cfg: makeFileLfsConfig(f, 1024))
+  var lfs = LittleFs(cfg: makeFileLfsConfig(f, block_count=1024))
   lfs.boot()
   
   var textFile: ref LfsFile

@@ -1,5 +1,6 @@
 import ../bindings/lfs
 import ./common
+import ../misc
 
 type
   FsObjectKind = enum
@@ -12,28 +13,25 @@ type
       dir*: LfsDir
 
 proc mkDir*(lfs: var LittleFs, path: string): LfsErrorCode {. discardable .} =
-  result = lfs_mkdir(lfs.lfs.addr, path.cstring).LfsErrorCode
+  LFS_ERR_MAYBE(result): lfs_mkdir(lfs.lfs.addr, path.cstring)
 
 proc dirOpen*(lfs: var LittleFs, path: string): ref LfsDir =
   result = new(LfsDir)
   result.lfs = lfs.lfs.addr
-  LfsErrNo = lfs_dir_open(result.lfs, result.dir.addr, path.cstring).LfsErrorCode
+  LFS_ERR_MAYBE: lfs_dir_open(result.lfs, result.dir.addr, path.cstring)
 
 proc read*(dir: ref LfsDir): LfsInfo =
-  LfsErrNo = lfs_dir_read(dir.lfs, dir.dir.addr, result.addr).LfsErrorCode
+  LFS_ERR_MAYBE: lfs_dir_read(dir.lfs, dir.dir.addr, result.addr)
 
 proc seek*(dir: ref LfsDir, offset: int) =
-  LfsErrNo = lfs_dir_seek(dir.lfs, dir.dir.addr, offset.LfsOffT).LfsErrorCode
+  LFS_ERR_MAYBE: lfs_dir_seek(dir.lfs, dir.dir.addr, offset.LfsOffT)
 
 proc tell*(dir: ref LfsDir): int =
   result = lfs_dir_tell(dir.lfs, dir.dir.addr)
-  if result > LFS_ERR_OK.int:
-    LfsErrNo = LFS_ERR_OK
-  else:
-    LfsErrNo = result.LfsErrorCode
+  LFS_ERR_MAYBE: result
 
 proc rewind*(dir: ref LfsDir) =
-  LfsErrNo = lfs_dir_rewind(dir.lfs, dir.dir.addr).LfsErrorCode
+  LFS_ERR_MAYBE: lfs_dir_rewind(dir.lfs, dir.dir.addr)
 
 iterator contents*(dir: ref LfsDir): LfsInfo =
   dir.rewind()
@@ -43,17 +41,6 @@ iterator contents*(dir: ref LfsDir): LfsInfo =
     result = dir.read()
 
 const virtDirs = [['.', '\0', '\0'], ['.', '.', '\0']]
-
-proc contains[N;M;T](sol: array[N, array[M,T]], sub: openArray[T]): bool=
-  for x in sol:
-    var
-      flag = true
-      i = 0
-    while (i < len(x)) and flag:
-      flag = flag and (sub[i] == x[i])
-      inc i
-    if flag: return true
-  return false
 
 iterator walk*(lfs: var LittleFs, path: string): LfsInfo {. closure .} =
   var dir = new(LfsDir)

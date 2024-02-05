@@ -21,13 +21,13 @@ proc open*(lfs: var LittleFs, path: string, flags: cint | static FileMode): ref 
       flags
   result = new(LfsFile)
   result.lfs = lfs.lfs.addr
-  LfsErrNo = lfs_file_open(result.lfs, result.file.addr, path, rflag).LfsErrorCode
+  LFS_ERR_MAYBE: lfs_file_open(result.lfs, result.file.addr, path, rflag)
 
 proc open*(lfs: var LittleFs, path: string, mode: LfsFileMode, flags: cint | LfsOpenFlags): ref LfsFile =
   open(lfs, path, mode | flags)
 
 proc close*(file: ref LfsFile): LfsErrorCode {. discardable .} =
-  lfs_file_close(file.lfs, file.file.addr).LfsErrorCode
+  LFS_ERR_MAYBE(result): lfs_file_close(file.lfs, file.file.addr)
 
 proc fileExists*(lfs: var LittleFs, path: string): bool =
   # This is not optimal
@@ -43,22 +43,24 @@ proc size*(file: ref LfsFile): int =
   lfsFileSize(file.lfs, file.file.addr)
 
 proc sync*(file: ref LfsFile) =
-  LfsErrNo = lfs_file_sync(file.lfs, file.file.addr).LfsErrorCode
+  LFS_ERR_MAYBE: lfs_file_sync(file.lfs, file.file.addr)
 
 proc rewind*(file: ref LfsFile) =
-  LfsErrNo = lfs_file_rewind(file.lfs, file.file.addr).LfsErrorCode
+  LFS_ERR_MAYBE: lfs_file_rewind(file.lfs, file.file.addr)
 
 proc seek*(file: ref LfsFile, offset: int, whence: int): int {. discardable .} =
   lfs_file_seek(file.lfs, file.file.addr, offset.LfsSOffT, whence.cint)
 
 proc truncate*(file: ref LfsFile, size: int) =
-  LfsErrNo = lfs_file_truncate(file.lfs, file.file.addr, size.LfsSizeT).LfsErrorCode
+  LFS_ERR_MAYBE: lfs_file_truncate(file.lfs, file.file.addr, size.LfsSizeT)
 
 proc tell*(file: ref LfsFile): int =
-  lfs_file_tell(file.lfs, file.file.addr)
+  result = lfs_file_tell(file.lfs, file.file.addr)
+  LFS_ERR_MAYBE(result)
 
 proc readRaw*(file: ref LfsFile, p: pointer, len: int): int {. discardable .} =
-  lfsFileRead(file.lfs, file.file.addr, p, len.LfsSizeT)
+  result = lfsFileRead(file.lfs, file.file.addr, p, len.LfsSizeT)
+  LFS_ERR_MAYBE(result)
 
 proc readImpl*[T](file: ref LfsFile, tds: typedesc[T]): T =
   discard readRaw(file, result.addr, sizeof(T))
@@ -77,7 +79,7 @@ proc readAll*(file: ref LfsFile): string =
 
 proc writeRaw*(file: ref LfsFile, p: pointer, size: int): int {. discardable .} =
   result = lfs_file_write(file.lfs, file.file.addr, p, size.LfsSizeT)
-  LfsErrNo = result.LfsErrorCode
+  LFS_ERR_MAYBE(result)
 
 proc writeString*(file: ref LfsFile, val: string) =
   writeRaw(file, val[0].addr, len(val))

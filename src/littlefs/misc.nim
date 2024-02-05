@@ -27,3 +27,14 @@ macro importCConst*(tn: typedesc, header_file: string, names: untyped) =
     resultStmtLet.add (quote do:
       let `sname.strVal`* {.importc, header: `header_file`, nodecl.}: `tn`)[0]
   resultStmtLet
+
+proc contains*[N;M;T](sol: array[N, array[M,T]], sub: openArray[T]): bool=
+  for x in sol:
+    var
+      flag = true
+      i = 0
+    while (i < len(x)) and flag:
+      flag = flag and (sub[i] == x[i])
+      inc i
+    if flag: return true
+  return false

@@ -6,7 +6,7 @@ import std/os
 const fsPath = "testfs.bin"
 
 var f = open(fsPath, if fileExists(fsPath): fmReadWriteExisting else: fmReadWrite)
-var lfs = LittleFs(cfg: makeFileLfsConfig(f, 1024))
+var lfs = LittleFs(cfg: makeFileLfsConfig(f, block_count=1024))
 lfs.boot()
 var file = lfs.open("boot_count", LFS_O_RDWR, LFS_O_CREAT)
 var boot_count = read[int](file)

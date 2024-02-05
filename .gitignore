@@ -22,4 +22,5 @@ packages
 **/*.o
 **/*.a
 **/*.so
+build/**
 nim.cfg

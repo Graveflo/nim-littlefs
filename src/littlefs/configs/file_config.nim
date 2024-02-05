@@ -1,3 +1,4 @@
+import ../api/common
 import ../bindings/lfs
 
 import std/os
@@ -29,23 +30,27 @@ proc mapFileLfsConfig*(result: var LfsConfig)=
   result.erase = lfsFileErase
   result.sync = lfsFileSync
 
-proc makeFileLfsConfig*(f: File, block_count: int, block_size = -1): LfsConfig =
-  var bs = block_size
-  if block_size == -1:
-    let info = f.getFileInfo
-    bs = info.blockSize
-  result.mapFileLfsConfig()
-  result.read_size = 16
-  result.prog_size = 8
-  result.block_size = bs.uint32
-  result.cache_size = 16
-  result.lookahead_size = 16
-  result.block_count = block_count.LfsSizeT
-  result.block_cycles = 1
-  result.context = cast[pointer](f)
+proc mapFileLfsConfig*(result: var LfsConfig, f: File)=
+  mapFileLfsConfig(result)
+  result.context = f
 
-proc makeFileLfsConfig*(f: File): LfsConfig =
-  let info = f.getFileInfo
-  if info.blockSize > info.size:
-    raise newException(IOError, "The given file is not large enough to facilitate a filesystem")
-  return makeFileLfsConfig(f, info.blockSize, info.size div info.blockSize)
+proc makeFileLfsConfig*(f: File, rs=16,ps=8,cs=16,ls=16,bcy=1, block_count = -1, block_size = -1): LfsConfig =
+  var
+    bs = block_size
+    bc = block_count
+  if block_size < 0 or block_count < 0:
+    let info = f.getFileInfo
+    if block_size < 0:
+      bs = info.blockSize
+    if block_count < 0:
+      bc = info.size div bs
+  if bc < 1 or bs < 1:
+    LFS_ERR_MAYBE(LFS_ERR_NOSPC): "The given file is not large enough to facilitate a filesystem"
+  result.mapFileLfsConfig(f)
+  result.read_size = rs.LfsSizeT
+  result.prog_size = ps.LfsSizeT
+  result.block_size = bs.uint32
+  result.cache_size = cs.LfsSizeT
+  result.lookahead_size = ls.LfsSizeT
+  result.block_count = bc.LfsSizeT
+  result.block_cycles = bcy.int32

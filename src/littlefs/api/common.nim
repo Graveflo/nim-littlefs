@@ -1,5 +1,10 @@
 import ../bindings/lfs
 
+const LfsUseNimUtils {. define .} = false
+when LfsUseNimUtils:
+  import ../bindings/lfs_nimutil
+  export lfs_nimutil
+
 type
   LittleFs* = object
     lfs*: LfsT
@@ -19,10 +24,22 @@ type
     code: LfsErrorCode
 
 
-var LfsErrNo* = LFS_ERR_OK
+var LfsErrNo* {. threadvar .}: LfsErrorCode
 
 proc `==`*(a,b: LfsType): bool {. borrow .}
 proc `==`*(a,b: LfsErrorCode): bool {. borrow .}
+
+template LFS_ERR_MAYBE*(err: LfsErrorCode | int | cint): untyped =
+  LfsErrNo = err.LfsErrorCode
+
+template LFS_ERR_MAYBE*(setme: untyped, err: LfsErrorCode | int | cint): untyped =
+  LFS_ERR_MAYBE(err)
+  `setme` = err.LfsErrorCode
+
+template LFS_ERR_MAYBE*(err: LfsErrorCode | int | cint, msg: string): untyped =
+  LFS_ERR_MAYBE(err)
+  # TODO: This echo is temporary
+  echo "error: ", msg
 
 proc closeAllOpen(x: ptr LfsT, kind: LfsType)=
   template op(cll, cst: untyped)=
@@ -38,13 +55,17 @@ proc closeAllOpen(x: ptr LfsT, kind: LfsType)=
   elif kind == LFS_TYPE_REG:
     op(lfs_file_close, LfsFileT)
 
-proc boot(lfs: var LfsT, cfg: ptr LfsConfig): int =
-  let firstMountErr = lfsMount(lfs.addr, cfg)
+proc boot(lfs: ptr LfsT, cfg: ptr LfsConfig): int =
+  let firstMountErr = lfsMount(lfs, cfg)
   if firstMountErr < 0:
-    discard lfsFormat(lfs.addr, cfg)
-    result = lfsMount(lfs.addr, cfg)
+    discard lfsFormat(lfs, cfg)
+    result = lfsMount(lfs, cfg)
   else:
     result = firstMountErr
+
+proc mount*(lfs: var LittleFs): LfsErrorCode {. discardable .}=
+  LFS_ERR_MAYBE: lfsMount(lfs.lfs.addr, lfs.cfg.addr)
+  return LfsErrNo
 
 proc `=destroy`(x: LittleFs) =
   if x.lfs.cfg == nil: return
@@ -58,16 +79,17 @@ proc `=copy`(x: var LittleFs, y: LittleFs) {. error .}
 proc `=dup`(x: LittleFs): LittleFs {. error .}
 
 proc boot*(lfs: var LittleFs): int {. discardable .} =
-  result = boot(lfs.lfs, lfs.cfg.addr)
+  result = boot(lfs.lfs.addr, lfs.cfg.addr)
 
 proc `or`*(a, b: CompatFEnumT | cint): cint = a.cint or b.cint
 proc `|`*(a, b: CompatFEnumT | cint): cint = a.cint or b.cint
 
 proc remove*(lfs: var LittleFs, path: string): LfsErrorCode =
-  lfs_remove(lfs.lfs.addr, path.cstring).LfsErrorCode
+  LFS_ERR_MAYBE(result): lfs_remove(lfs.lfs.addr, path.cstring)
 
 proc rename*(lfs: var LittleFs, old_path: string, new_path: string): LfsErrorCode =
-  lfs_rename(lfs.lfs.addr, old_path.cstring, new_path.cstring).LfsErrorCode
+  LFS_ERR_MAYBE(result): lfs_rename(lfs.lfs.addr, old_path.cstring, new_path.cstring)
 
 proc stat*(lfs: var LittleFs, path: string): LfsInfo =
-  LfsErrNo = lfs_stat(lfs.lfs.addr, path.cstring, result.addr).LfsErrorCode
+  LFS_ERR_MAYBE: lfs_stat(lfs.lfs.addr, path.cstring, result.addr)
+
