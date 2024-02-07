@@ -59,15 +59,21 @@ proc tell*(file: ref LfsFile): int =
   result = lfs_file_tell(file.lfs, file.file.addr)
   LFS_ERR_MAYBE(result)
 
-proc readRaw*(lfs: ptr LfsT, file: ptr LfsFileT, p: pointer, len: int): int {. discardable .} =
+proc readRaw*(lfs: ptr LfsT, file: ptr LfsFileT, p: pointer, len: int): int =
   result = lfsFileRead(lfs, file, p, len.LfsSizeT)
   LFS_ERR_MAYBE(result)
 
-proc readRaw*(file: ref LfsFile, p: pointer, len: int): int {. discardable .} =
+proc readRaw*(file: ref LfsFile, p: pointer, len: int): int =
   readRaw(file.lfs, file.file.addr, p, len)
+
+proc read*[T](lfs: ptr LfsT, file: ptr LfsFileT): T
 
 proc readImpl*[T](lfs: ptr LfsT, file: ptr LfsFileT, tds: typedesc[T]): T =
   discard readRaw(lfs, file, result.addr, sizeof(T))
+
+proc readImpl*[T: string](lfs: ptr LfsT, file: ptr LfsFileT, tds: typedesc[T]): T =
+  result.setLen(read[int](lfs, file))
+  discard readRaw(lfs, file, result[0].addr, len(result))
 
 proc read*[T](lfs: ptr LfsT, file: ptr LfsFileT): T = readImpl(lfs, file, T)
 
@@ -100,19 +106,22 @@ proc writeRaw*[T](lfs: ptr LfsT, file: ptr LfsFileT, p: ptr T): int {. discardab
 proc writeRaw*[T](file: ref LfsFile, p: ptr T): int {. discardable .} =
   writeRaw(file.lfs, file.file.addr, p, sizeof(T).LfsSizeT)
 
+proc writeString*[T](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
+  writeRaw(lfs, file, val[0].addr, len(val))
+
 proc writeString*[T](file: ref LfsFile, val: T): int {. discardable .} =
-  writeRaw(file.lfs, file.file.addr, val[0].addr, len(val))
+  writeString(file.lfs, file.file.addr, val)
 
-proc write*[T: string](file: ref LfsFile, val: T): int {. discardable .} =
+proc write*[T: string](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
   mixin write
-  write(file, len(val))
-  writeString(file, val)
+  result = write(lfs, file, len(val))
+  result += writeString(lfs, file, val)
 
-proc write*[T: seq](file: ref LfsFile, val: T): int {. discardable .} =
+proc write*[T: seq](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
   mixin write
-  write(file, len(val))
+  result = write(lfs, file, len(val))
   for x in val:
-    write(file, x)
+    result += write(lfs, file, x)
 
 proc write*[T](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
   writeRaw(lfs, file, val.addr)
