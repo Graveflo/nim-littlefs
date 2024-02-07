@@ -13,7 +13,7 @@ requires "nim >= 2.1.1"
 
 requires "cligen"
 
-include "./buildsys.nims"
+# import "./buildsys.nims" this doesn't seem to work
 
-task install, "builds stuff":
-  buildLfsLibsTask()
+task build, "builds stuff":  # this doesnt seem to work automatically
+  exec("nim buildLfsLibs buildsys.nims")
