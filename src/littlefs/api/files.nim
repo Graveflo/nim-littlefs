@@ -59,40 +59,63 @@ proc tell*(file: ref LfsFile): int =
   result = lfs_file_tell(file.lfs, file.file.addr)
   LFS_ERR_MAYBE(result)
 
-proc readRaw*(file: ref LfsFile, p: pointer, len: int): int {. discardable .} =
-  result = lfsFileRead(file.lfs, file.file.addr, p, len.LfsSizeT)
+proc readRaw*(lfs: ptr LfsT, file: ptr LfsFileT, p: pointer, len: int): int {. discardable .} =
+  result = lfsFileRead(lfs, file, p, len.LfsSizeT)
   LFS_ERR_MAYBE(result)
 
-proc readImpl*[T](file: ref LfsFile, tds: typedesc[T]): T =
-  discard readRaw(file, result.addr, sizeof(T))
+proc readRaw*(file: ref LfsFile, p: pointer, len: int): int {. discardable .} =
+  readRaw(file.lfs, file.file.addr, p, len)
 
-proc read*[T](file: ref LfsFile): T = readImpl(file, T)
+proc readImpl*[T](lfs: ptr LfsT, file: ptr LfsFileT, tds: typedesc[T]): T =
+  discard readRaw(lfs, file, result.addr, sizeof(T))
+
+proc read*[T](lfs: ptr LfsT, file: ptr LfsFileT): T = readImpl(lfs, file, T)
+
+proc read*[T](file: ref LfsFile): T = readImpl(file.lfs, file.file.addr, T)
+
+proc readString*(lfs: ptr LfsT, file: ptr LfsFileT, size: range[1..high(int)]): string =
+  result.setLen(size)
+  let actual = readRaw(lfs, file, result[0].addr, size)
+  result.setLen(actual)
 
 proc readString*(file: ref LfsFile, size: range[1..high(int)]): string =
-  result.setLen(size)
-  let actual = readRaw(file, result[0].addr, size)
-  result.setLen(actual)
+  readString(file.lfs, file.file.addr, size)
+
+proc readAll*(lfs: ptr LfsT, file: ptr LfsFileT): string =
+  readString(lfs, file, lfs_file_size(lfs, file))
 
 proc readAll*(file: ref LfsFile): string =
   readString(file, file.size)
 
-proc writeRaw*(file: ref LfsFile, p: pointer, size: int): int {. discardable .} =
-  result = lfs_file_write(file.lfs, file.file.addr, p, size.LfsSizeT)
+proc writeRaw*(lfs: ptr LfsT, file: ptr LfsFileT, p: pointer, size: int): int {. discardable .} =
+  result = lfs_file_write(lfs, file, p, size.LfsSizeT)
   LFS_ERR_MAYBE(result)
 
-proc writeString*(file: ref LfsFile, val: string) =
-  writeRaw(file, val[0].addr, len(val))
+proc writeRaw*(file: ref LfsFile, p: pointer, size: int): int {. discardable .} =
+  writeRaw(file.lfs, file.file.addr, p, size)
 
-proc write*[T: string](file: ref LfsFile, val: T) =
+proc writeRaw*[T](lfs: ptr LfsT, file: ptr LfsFileT, p: ptr T): int {. discardable .} =
+  writeRaw(lfs, file, p, sizeof(T))
+
+proc writeRaw*[T](file: ref LfsFile, p: ptr T): int {. discardable .} =
+  writeRaw(file.lfs, file.file.addr, p, sizeof(T).LfsSizeT)
+
+proc writeString*[T](file: ref LfsFile, val: T): int {. discardable .} =
+  writeRaw(file.lfs, file.file.addr, val[0].addr, len(val))
+
+proc write*[T: string](file: ref LfsFile, val: T): int {. discardable .} =
   mixin write
   write(file, len(val))
   writeString(file, val)
 
-proc write*[T: seq](file: ref LfsFile, val: T) =
+proc write*[T: seq](file: ref LfsFile, val: T): int {. discardable .} =
   mixin write
   write(file, len(val))
   for x in val:
     write(file, x)
 
-proc write*[T](file: ref LfsFile, val: T) =
-  writeRaw(file, val.addr, sizeof(T))
+proc write*[T](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
+  writeRaw(lfs, file, val.addr)
+
+proc write*[T](file: ref LfsFile, val: T): int {. discardable .} =
+  write(file.lfs, file.file.addr, val)

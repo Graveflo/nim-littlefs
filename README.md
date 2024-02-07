@@ -75,7 +75,7 @@ compile with this option enabled
 - The destructors are designed to try and clean up before destroying the `LittleFs` object, but this 
 is not supported by the littlefs C library as far as I'm aware. I did my best, but I can't gaurentee it will work.
 - File objects and Dir objects are heap allocated `ref`s. This is because they must maintain a constant memory address for
-littlefs to function properly. It's easy enough to handle them on the stack if you want to, but you might have to enable co-variance
+littlefs to function properly. It's easy enough to handle them on the stack if you want to, but you might have to use the thin wrappings in `bindings`
 to use the API functions as they expect `ref` objects
 - Although it may be annoying the error handling mechanism is a global `var LfsErrNo` that you have to manually check. Maybe this will change in future
 - This project does not conform to Nim's style guide and I do not intend to. If there are self-contained inconsistencies, then I will fix them
