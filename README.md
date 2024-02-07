@@ -42,21 +42,23 @@ buildsys.nims               Build system will go here if needed
 ```
 
 ## Building with buildsys.nims
-This library comes with a Nim implementation of lfs_util.h. To use it define `lfsUseNimUtils`. The build tasks and the
-api both use this definition.
+This library comes with a Nim implementation of lfs_util.h. To use it define `lfsUseNimUtils`. The build tasks
+and the api both observe this definition.
 
-The following will clode littlefs and build it. Both the normal version and `lfsUseNimUtils` version. The regular version will
-be dropped at `build/liblfs.a` and the custom version will be at `build/liblfsNim.a`:
+The following will clone littlefs and build it. This task will build two versions of the littlefs C library, 
+one of which is compiled expecting the nim implemnation of `lfs_util.h`. Library files will be dropped at
+`build/liblfs.a` and `build/liblfsNim.a` respectively:
 
 `nim buildLfsLibs buildsys.nims`
 
-To build lfs with asserts, errors and warnings disabled:
+To build the littlefs C source with asserts, errors and warnings disabled:
 
 `nim -d:danger buildLfsLibs buildsys.nims`
 
 To build the fuse driver run:
 
 `nim buildFuse buildsys.nims`
+
 or
 
 `nim -d:lfsUseNimUtils -d:release buildFuse buildsys.nims`
@@ -68,7 +70,6 @@ You can import "config.nims", or if in nimble path, `littlefs/api/build_help/con
 
 The api file `common.nim` will import and export `bindings/lfs_nimutil.nim` when `lfsUseNimUtils` is defined so that it is easy to 
 compile with this option enabled
-
 
 ## FYIs
 - The destructors are designed to try and clean up before destroying the `LittleFs` object, but this 
