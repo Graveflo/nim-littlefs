@@ -13,7 +13,7 @@ requires "nim >= 2.1.1"
 
 requires "cligen"
 
-include "buildsys.nims"
+include "./buildsys.nims"
 
 task install, "builds stuff":
   buildLfsLibsTask()
