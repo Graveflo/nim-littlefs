@@ -15,5 +15,5 @@ requires "cligen"
 
 include "buildsys.nims"
 
-task build, "builds stuff":
+task install, "builds stuff":
   buildLfsLibsTask()

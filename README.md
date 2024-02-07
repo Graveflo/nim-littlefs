@@ -47,19 +47,23 @@ api both use this definition.
 
 The following will clode littlefs and build it. Both the normal version and `lfsUseNimUtils` version. The regular version will
 be dropped at `build/liblfs.a` and the custom version will be at `build/liblfsNim.a`:
+
 `nim buildLfsLibs buildsys.nims`
 
 To build lfs with asserts, errors and warnings disabled:
+
 `nim -d:danger buildLfsLibs buildsys.nims`
 
 To build the fuse driver run:
+
 `nim buildFuse buildsys.nims`
 or
+
 `nim -d:lfsUseNimUtils -d:release buildFuse buildsys.nims`
 
 ---
 
-You can import "config.nims" to have the c sources automatically added via `cincludes` and the correct library given the state of
+You can import "config.nims", or if in nimble path, `littlefs/api/build_help/config.nims` to have the c sources automatically added via `cincludes` and the correct library given the state of
 `lfsUseNimUtils`.
 
 The api file `common.nim` will import and export `bindings/lfs_nimutil.nim` when `lfsUseNimUtils` is defined so that it is easy to 
