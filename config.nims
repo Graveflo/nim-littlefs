@@ -1,10 +1,11 @@
 import os
 
---noNimblePath 
-switch("cincludes", thisDir() / "build/littlefs")
-when defined(LfsUseNimUtils):
-  switch("passL", thisDir() / "build/lfs.o")
+# current bug in nim makes `thisDir()` not work the same as `currentSourcePath`
+
+switch("cincludes", currentSourcePath.parentDir() / "build/littlefs")
+when defined(lfsUseNimUtils):
+  discard # should be handled by common.nim
+  switch("passL", currentSourcePath.parentDir() / "build/liblfsNim.a")
 else:
-  switch("passL", thisDir() / "build/liblfs.a")
---gc:arc
---listCmd
+  discard # should be handled by common.nim
+  switch("passL", currentSourcePath.parentDir() / "build/liblfs.a")

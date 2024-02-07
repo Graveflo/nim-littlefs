@@ -1,5 +1,6 @@
 import ../bindings/lfs
 import ./common
+import ../misc
 
 proc conv(fm: FileMode): cint {. compileTime .} =
   case fm
@@ -14,7 +15,7 @@ proc conv(fm: FileMode): cint {. compileTime .} =
   of fmAppend:
     result = LfsOpenFlags.LFS_O_CREAT | LfsOpenFlags.LFS_O_RDWR | LfsOpenFlags.LFS_O_APPEND
 
-proc open*(lfs: var LittleFs, path: string, flags: cint | static FileMode): ref LfsFile =
+proc open*(lfs: var LittleFs, path: InvString, flags: cint | static FileMode): ref LfsFile =
   let rflag = when flags is FileMode:
       conv(flags)
     else:
@@ -23,13 +24,13 @@ proc open*(lfs: var LittleFs, path: string, flags: cint | static FileMode): ref 
   result.lfs = lfs.lfs.addr
   LFS_ERR_MAYBE: lfs_file_open(result.lfs, result.file.addr, path, rflag)
 
-proc open*(lfs: var LittleFs, path: string, mode: LfsFileMode, flags: cint | LfsOpenFlags): ref LfsFile =
+proc open*(lfs: var LittleFs, path: InvString, mode: LfsFileMode, flags: cint | LfsOpenFlags): ref LfsFile =
   open(lfs, path, mode | flags)
 
-proc close*(file: ref LfsFile): LfsErrorCode {. discardable .} =
+proc close*(file: sink ref LfsFile): LfsErrorCode {. discardable .} =
   LFS_ERR_MAYBE(result): lfs_file_close(file.lfs, file.file.addr)
 
-proc fileExists*(lfs: var LittleFs, path: string): bool =
+proc fileExists*(lfs: var LittleFs, path: InvString): bool =
   # This is not optimal
   var f: LfsFileT
   let res = lfs_file_open(lfs.lfs.addr, f.addr, path, LfsOpenFlags.LFS_O_RDONLY.cint)
@@ -48,7 +49,7 @@ proc sync*(file: ref LfsFile) =
 proc rewind*(file: ref LfsFile) =
   LFS_ERR_MAYBE: lfs_file_rewind(file.lfs, file.file.addr)
 
-proc seek*(file: ref LfsFile, offset: int, whence: int): int {. discardable .} =
+proc seek*(file: ref LfsFile, offset: int, whence: int | LfsWhenceFlags): int {. discardable .} =
   lfs_file_seek(file.lfs, file.file.addr, offset.LfsSOffT, whence.cint)
 
 proc truncate*(file: ref LfsFile, size: int) =
@@ -65,9 +66,7 @@ proc readRaw*(file: ref LfsFile, p: pointer, len: int): int {. discardable .} =
 proc readImpl*[T](file: ref LfsFile, tds: typedesc[T]): T =
   discard readRaw(file, result.addr, sizeof(T))
 
-proc read*[T](file: ref LfsFile): T =
-  mixin readImpl
-  result = readImpl(file, T)
+proc read*[T](file: ref LfsFile): T = readImpl(file, T)
 
 proc readString*(file: ref LfsFile, size: range[1..high(int)]): string =
   result.setLen(size)

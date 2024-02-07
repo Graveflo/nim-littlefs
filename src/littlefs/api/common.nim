@@ -1,7 +1,9 @@
+import std/[os, macros]
 import ../bindings/lfs
+import ../misc
 
-const LfsUseNimUtils {. define .} = false
-when LfsUseNimUtils:
+const lfsUseNimUtils {. define .} = false
+when lfsUseNimUtils:
   import ../bindings/lfs_nimutil
   export lfs_nimutil
 
@@ -32,11 +34,18 @@ proc `==`*(a,b: LfsErrorCode): bool {. borrow .}
 template LFS_ERR_MAYBE*(err: LfsErrorCode | int | cint): untyped =
   LfsErrNo = err.LfsErrorCode
 
-template LFS_ERR_MAYBE*(setme: untyped, err: LfsErrorCode | int | cint): untyped =
-  LFS_ERR_MAYBE(err)
-  `setme` = err.LfsErrorCode
+#macro LFS_ERR_MAYBE*(setme, body: untyped): untyped =
+#  result = quote do:
+#    let err = `body`
+#    LFS_ERR_MAYBE(err)
+#    `setme` = err.LfsErrorCode
 
-template LFS_ERR_MAYBE*(err: LfsErrorCode | int | cint, msg: string): untyped =
+template LFS_ERR_MAYBE*(setme, body: untyped): untyped=
+  let err = LfsErrorCode(body)
+  LFS_ERR_MAYBE(err)
+  `setme` = err
+
+template LFS_ERR_MAYBE*(err: LfsErrorCode | int | cint, msg: string): untyped=
   LFS_ERR_MAYBE(err)
   # TODO: This echo is temporary
   echo "error: ", msg
@@ -84,12 +93,18 @@ proc boot*(lfs: var LittleFs): int {. discardable .} =
 proc `or`*(a, b: CompatFEnumT | cint): cint = a.cint or b.cint
 proc `|`*(a, b: CompatFEnumT | cint): cint = a.cint or b.cint
 
-proc remove*(lfs: var LittleFs, path: string): LfsErrorCode =
+proc remove*(lfs: var LittleFs, path: InvString): LfsErrorCode =
   LFS_ERR_MAYBE(result): lfs_remove(lfs.lfs.addr, path.cstring)
 
-proc rename*(lfs: var LittleFs, old_path: string, new_path: string): LfsErrorCode =
+proc rename*(lfs: var LittleFs, old_path: InvString, new_path: InvString): LfsErrorCode =
   LFS_ERR_MAYBE(result): lfs_rename(lfs.lfs.addr, old_path.cstring, new_path.cstring)
 
-proc stat*(lfs: var LittleFs, path: string): LfsInfo =
+proc stat*(lfs: var LittleFs, path: InvString): LfsInfo =
   LFS_ERR_MAYBE: lfs_stat(lfs.lfs.addr, path.cstring, result.addr)
 
+proc stat*(lfs: var LittleFs): LfsFsInfo=
+  LFS_ERR_MAYBE: lfs_fs_stat(lfs.lfs.addr, result.addr)
+
+proc size*(lfs: var LittleFS): int =
+  LFS_ERR_MAYBE: lfs_fs_size(lfs.lfs.addr)
+  return LfsErrNo.int

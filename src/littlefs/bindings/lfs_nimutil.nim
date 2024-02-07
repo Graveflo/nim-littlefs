@@ -57,16 +57,16 @@ proc lfs_tobe32*(a: uint32): uint32 {.inline.} =
   return lfsFrombe32(a)
 
 proc lfs_crc*(crci: uint32; buffer: pointer; size: csize_t): uint32 =
-    let rtable: array[16, uint32] = [0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac,
-                                  0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
-                                  0xedb88320.uint32, 0xf00f9344.uint32, 0xd6d6a3e8.uint32, 0xcb61b38c.uint32,
-                                  0x9b64c2b0.uint32, 0x86d3d2d4.uint32, 0xa00ae278.uint32, 0xbdbdf21c.uint32]
-    var crc = crci
-    let data = cast[ptr UncheckedArray[uint8]](buffer)
-    for i in 0..<size:
-      crc = (crc shr 4) xor rtable[(crc xor (data[i] shr 0)) and 0xf]
-      crc = (crc shr 4) xor rtable[(crc xor (data[i] shr 4)) and 0xf]
-    return crc
+  let rtable: array[16, uint32] = [0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac,
+                                0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
+                                0xedb88320.uint32, 0xf00f9344.uint32, 0xd6d6a3e8.uint32, 0xcb61b38c.uint32,
+                                0x9b64c2b0.uint32, 0x86d3d2d4.uint32, 0xa00ae278.uint32, 0xbdbdf21c.uint32]
+  var crc = crci
+  let data = cast[ptr UncheckedArray[uint8]](buffer)
+  for i in 0..<size:
+    crc = (crc shr 4) xor rtable[(crc xor (data[i] shr 0)) and 0xf]
+    crc = (crc shr 4) xor rtable[(crc xor (data[i] shr 4)) and 0xf]
+  return crc
 
 proc lfs_malloc*(size: csize_t): pointer {.inline.} =
   when not defined(LFS_NO_MALLOC):

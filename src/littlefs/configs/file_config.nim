@@ -34,18 +34,12 @@ proc mapFileLfsConfig*(result: var LfsConfig, f: File)=
   mapFileLfsConfig(result)
   result.context = f
 
-proc makeFileLfsConfig*(f: File, rs=16,ps=8,cs=16,ls=16,bcy=1, block_count = -1, block_size = -1): LfsConfig =
+proc makeFileLfsConfig*(f: File, rs=16,ps=8,cs=16,ls=16,bcy=1, block_count = 0, block_size = -1): LfsConfig =
   var
     bs = block_size
     bc = block_count
-  if block_size < 0 or block_count < 0:
-    let info = f.getFileInfo
-    if block_size < 0:
-      bs = info.blockSize
-    if block_count < 0:
-      bc = info.size div bs
-  if bc < 1 or bs < 1:
-    LFS_ERR_MAYBE(LFS_ERR_NOSPC): "The given file is not large enough to facilitate a filesystem"
+  if block_size < 0:
+    bs = f.getFileInfo.blockSize
   result.mapFileLfsConfig(f)
   result.read_size = rs.LfsSizeT
   result.prog_size = ps.LfsSizeT

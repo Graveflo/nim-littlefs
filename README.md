@@ -18,7 +18,7 @@ import std/os
 const fsPath = "testfs.bin"
 
 var f = open(fsPath, if fileExists(fsPath): fmReadWriteExisting else: fmReadWrite)
-var lfs = LittleFs(cfg: makeFileLfsConfig(f, 1024))
+var lfs = LittleFs(cfg: makeFileLfsConfig(f, block_count=1024))
 lfs.boot()
 var file = lfs.open("boot_count", fmReadWrite)
 var boot_count = read[int](file)
@@ -41,19 +41,30 @@ tests                       Nothing yet
 buildsys.nims               Build system will go here if needed
 ```
 
-## Building littlefs and linking
-Build littlefs as normal with `make build` but take note of the generated files `lfs.o` and `liblfs.a`. If you want to use
-the Nim implementation of `lfs_util.h` make sure you compile littlefs with the custom header in `build/lfs_util.h`. You can
-do this manually or with the environment variable mentioned in littlefs's `lfs_util.h` file.
+## Building with buildsys.nims
+This library comes with a Nim implementation of lfs_util.h. To use it define `lfsUseNimUtils`. The build tasks and the
+api both use this definition.
 
-If you are using the Nim implementation of `lfs_util.h` and have compiled littlefs as above, then link with `lfs.o` *not* `liblfs.a` and
-also `import littlefs/api/lfs_nimutil`:
+The following will clode littlefs and build it. Both the normal version and `lfsUseNimUtils` version. The regular version will
+be dropped at `build/liblfs.a` and the custom version will be at `build/liblfsNim.a`:
+`nim buildLfsLibs buildsys.nims`
 
-`--passL:/path/to/lfs.o --cincludes:"path/to/littlefs"`
+To build lfs with asserts, errors and warnings disabled:
+`nim -d:danger buildLfsLibs buildsys.nims`
 
-If you are not using the Nim implementation of `lfs_util.h` then do not do the above and just link to `liblfs.a` as normal:
+To build the fuse driver run:
+`nim buildFuse buildsys.nims`
+or
+`nim -d:lfsUseNimUtils -d:release buildFuse buildsys.nims`
 
-`--passL:/path/to/liblfs.a --cincludes:"path/to/littlefs"`
+---
+
+You can import "config.nims" to have the c sources automatically added via `cincludes` and the correct library given the state of
+`lfsUseNimUtils`.
+
+The api file `common.nim` will import and export `bindings/lfs_nimutil.nim` when `lfsUseNimUtils` is defined so that it is easy to 
+compile with this option enabled
+
 
 ## FYIs
 - The destructors are designed to try and clean up before destroying the `LittleFs` object, but this 
@@ -64,10 +75,10 @@ to use the API functions as they expect `ref` objects
 - Although it may be annoying the error handling mechanism is a global `var LfsErrNo` that you have to manually check. Maybe this will change in future
 - This project does not conform to Nim's style guide and I do not intend to. If there are self-contained inconsistencies, then I will fix them
 - Atlas will be the target env management program, nimble related things will be maintained at bare minimum
+- The default configurations are not exactly sane, just change them to fit your needs. They should probably be explicitly defined anyways
 
 ## Future plans
 - Configs for nesper (ESP32)
-- FUSE implementation
 - Maybe more API features as I need them (PRs welcome)
     - Maybe implement user attributes
 - Maybe implement exceptions with a `-d:lfsExceptions`

@@ -12,13 +12,16 @@ type
     of Dir:
       dir*: LfsDir
 
-proc mkDir*(lfs: var LittleFs, path: string): LfsErrorCode {. discardable .} =
+proc mkDir*(lfs: var LittleFs, path: InvString): LfsErrorCode {. discardable .} =
   LFS_ERR_MAYBE(result): lfs_mkdir(lfs.lfs.addr, path.cstring)
 
-proc dirOpen*(lfs: var LittleFs, path: string): ref LfsDir =
+proc dirOpen*(lfs: var LittleFs, path: InvString): ref LfsDir =
   result = new(LfsDir)
   result.lfs = lfs.lfs.addr
   LFS_ERR_MAYBE: lfs_dir_open(result.lfs, result.dir.addr, path.cstring)
+
+proc dirClose*(dir: ref LfsDir): LfsErrorCode=
+  LFS_ERR_MAYBE: lfs_dir_close(dir.lfs, dir.dir.addr)
 
 proc read*(dir: ref LfsDir): LfsInfo =
   LFS_ERR_MAYBE: lfs_dir_read(dir.lfs, dir.dir.addr, result.addr)
@@ -42,7 +45,7 @@ iterator contents*(dir: ref LfsDir): LfsInfo =
 
 const virtDirs = [['.', '\0', '\0'], ['.', '.', '\0']]
 
-iterator walk*(lfs: var LittleFs, path: string): LfsInfo {. closure .} =
+iterator walk*(lfs: var LittleFs, path: InvString): LfsInfo {. closure .} =
   var dir = new(LfsDir)
   dir.lfs = lfs.lfs.addr
   if lfs_dir_open(lfs.lfs.addr, dir.dir.addr, path.cstring) == LFS_ERR_OK.int:  # This should prob be an exception

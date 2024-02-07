@@ -5,21 +5,6 @@
  * Copyright (c) 2017, Arm Limited. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#ifndef LFS_UTIL_H
-#define LFS_UTIL_H
-
-// Users can override lfs_util.h with their own configuration by defining
-// LFS_CONFIG as a header file to include (-DLFS_CONFIG=lfs_config.h).
-//
-// If LFS_CONFIG is used, none of the default utils will be emitted and must be
-// provided by the config file. To start, I would suggest copying lfs_util.h
-// and modifying as needed.
-#ifdef LFS_CONFIG
-#define LFS_STRINGIZE(x) LFS_STRINGIZE2(x)
-#define LFS_STRINGIZE2(x) #x
-#include LFS_STRINGIZE(LFS_CONFIG)
-#else
-
 // System includes
 #include <stdint.h>
 #include <stdbool.h>
@@ -32,6 +17,10 @@
 #ifndef LFS_NO_ASSERT
 #include <assert.h>
 #endif
+
+#include <stdio.h>
+
+
 #if !defined(LFS_NO_DEBUG) || \
         !defined(LFS_NO_WARN) || \
         !defined(LFS_NO_ERROR) || \
@@ -99,7 +88,6 @@ extern "C"
 #endif
 #endif
 
-
 // Builtin functions, these may be replaced by more efficient
 // toolchain-specific implementations. LFS_NO_INTRINSICS falls back to a more
 // expensive basic C implementation for debugging purposes
@@ -111,6 +99,7 @@ static inline uint32_t lfs_min(uint32_t a, uint32_t b);
 
 // Align to nearest multiple of a size
 static inline uint32_t lfs_aligndown(uint32_t a, uint32_t alignment);
+
 static inline uint32_t lfs_alignup(uint32_t a, uint32_t alignment);
 
 // Find the smallest power of 2 greater than or equal to a
@@ -137,11 +126,12 @@ static inline uint32_t lfs_frombe32(uint32_t a);
 
 static inline uint32_t lfs_tobe32(uint32_t a);
 
-// Calculate CRC-32 with polynomial = 0x04c11db7
 uint32_t lfs_crc(uint32_t crc, const void *buffer, size_t size);
 
 // Allocate memory, only used if buffers are not provided to littlefs
-// Note, memory must be 64-bit aligned
+//
+// littlefs current has no alignment requirements, as it only allocates
+// byte-level buffers.
 static inline void *lfs_malloc(size_t size);
 
 // Deallocate memory, only used if buffers are not provided to littlefs
@@ -150,7 +140,4 @@ static inline void lfs_free(void *p);
 
 #ifdef __cplusplus
 } /* extern "C" */
-#endif
-
-#endif
 #endif

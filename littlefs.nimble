@@ -12,3 +12,8 @@ srcDir        = "src"
 requires "nim >= 2.1.1"
 
 requires "cligen"
+
+include "buildsys.nims"
+
+task build, "builds stuff":
+  buildLfsLibsTask()

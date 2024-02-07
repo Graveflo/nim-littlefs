@@ -1,5 +1,8 @@
 import std/macros
 
+type
+  InvString* = string | cstring
+
 macro importCConst*(tn: typedesc, header_file: string, names: untyped) =
   names.expectKind(nnkStmtList)
   var resultStmtLet = newTree(nnkLetSection)
@@ -38,3 +41,6 @@ proc contains*[N;M;T](sol: array[N, array[M,T]], sub: openArray[T]): bool=
       inc i
     if flag: return true
   return false
+
+template `|=`*(a: untyped, b: SomeInteger): untyped=
+  `a` = a or typeof(a)(b)

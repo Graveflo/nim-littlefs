@@ -138,7 +138,7 @@ type
     size* {.importc: "size".}: LfsSizeT
     name* {.importc: "name".}: array[LFS_NAME_MAX + 1, char]
 
-  LfsFsinfo* {.importc: "lfs_fsinfo", header: "lfs.h", bycopy.} = object
+  LfsFsinfo* {.importc: "struct lfs_fsinfo", header: "lfs.h", bycopy.} = object
     diskVersion* {.importc: "disk_version".}: uint32
     blockSize* {.importc: "block_size".}: LfsSizeT
     blockCount* {.importc: "block_count".}: LfsSizeT
