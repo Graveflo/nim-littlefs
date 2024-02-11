@@ -2,6 +2,10 @@ import std/macros
 
 type
   InvString* = string | cstring
+  OpenArrayLike* = concept x
+    toOpenArray(x, 0, len(x)) is openArray
+  CharArrayLike* = concept x
+    toOpenArray(x, 0, len(x)) is openArray[char]
 
 macro importCConst*(tn: typedesc, header_file: string, names: untyped) =
   names.expectKind(nnkStmtList)
@@ -33,14 +37,15 @@ macro importCConst*(tn: typedesc, header_file: string, names: untyped) =
 
 proc contains*[N;M;T](sol: array[N, array[M,T]], sub: openArray[T]): bool=
   for x in sol:
-    var
-      flag = true
-      i = 0
-    while (i < len(x)) and flag:
-      flag = flag and (sub[i] == x[i])
+    result = true
+    var i = 0
+    while (i < len(x)) and result:
+      result = result and sub[i] == x[i]
       inc i
-    if flag: return true
-  return false
+    if result: return
+
+template toOpenArray*(s: OpenArrayLike): untyped =
+  toOpenArray(s, 0, s.len-1)
 
 template `|=`*(a: untyped, b: SomeInteger): untyped=
   `a` = a or typeof(a)(b)

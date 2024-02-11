@@ -1,4 +1,4 @@
-import littlefs/all
+import littlefs/api/all
 import littlefs/configs/file_config
 
 import std/os
@@ -24,6 +24,7 @@ lfs.boot()
 var file = lfs.open("custom_file", LFS_O_RDWR, LFS_O_CREAT)
 file.write("This is a string")
 file.write(A(f1: 4, f3: "This is another string"))
+file.sync()
 file.rewind()
 echo read[string](file)
 echo read[A](file)

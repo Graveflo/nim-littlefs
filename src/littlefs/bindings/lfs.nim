@@ -130,7 +130,7 @@ type
     attrMax* {.importc: "attr_max".}: LfsSizeT
     metadataMax* {.importc: "metadata_max".}: LfsSizeT
     when defined(LFS_MULTIVERSION):
-      diskVersion* {.importc: "disk_version", header: "lfs.h".}: uint32
+      diskVersion* {.importc: "disk_version".}: uint32
 
 type
   LfsInfo* {.importc: "struct lfs_info", header: "lfs.h", bycopy.} = object

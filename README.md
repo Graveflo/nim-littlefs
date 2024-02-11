@@ -2,12 +2,14 @@
 
 This is still experimental since I have not tested it or used it at all.
 
-Clone the [littlefs](https://github.com/littlefs-project/littlefs) repository and observe their copyright and distribution license.
+Observe copyright and distribution license of [littlefs](https://github.com/littlefs-project/littlefs) 
+from their GitHub repository:
+
 Copyright (c) 2022, The littlefs authors.
 Copyright (c) 2017, Arm Limited. All rights reserved.
 
 ## Boot count example
-This example is translated from the littlefs github [README](https://github.com/littlefs-project/littlefs/blob/master/README.md)
+This example is translated from the littlefs GitHub [README](https://github.com/littlefs-project/littlefs/blob/master/README.md)
 
 ```nim
 import littlefs/all
@@ -46,7 +48,7 @@ This library comes with a Nim implementation of lfs_util.h. To use it define `lf
 and the api both observe this definition.
 
 The following will clone littlefs and build it. This task will build two versions of the littlefs C library, 
-one of which is compiled expecting the nim implemnation of `lfs_util.h`. Library files will be dropped at
+one of which is compiled expecting the Nim implementation of `lfs_util.h`. Library files will be dropped at
 `build/liblfs.a` and `build/liblfsNim.a` respectively:
 
 `nim buildLfsLibs buildsys.nims`
@@ -73,7 +75,7 @@ compile with this option enabled
 
 ## FYIs
 - The destructors are designed to try and clean up before destroying the `LittleFs` object, but this 
-is not supported by the littlefs C library as far as I'm aware. I did my best, but I can't gaurentee it will work.
+is not supported by the littlefs C library as far as I'm aware. I did my best, but I can't guarantee it will work.
 - File objects and Dir objects are heap allocated `ref`s. This is because they must maintain a constant memory address for
 littlefs to function properly. It's easy enough to handle them on the stack if you want to, but you might have to use the thin wrappings in `bindings`
 to use the API functions as they expect `ref` objects

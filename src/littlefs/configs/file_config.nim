@@ -15,7 +15,10 @@ proc lfsFileProgram(c: ptr LfsConfig; chunk: uint32; off: uint32;
   f.setFilePos(((c.block_size * chunk) + (off * 1)).int)
   discard f.writeBuffer(buffer, size).cint
 
-proc lfsFileSync(c: ptr LfsConfig): cint {. cdecl .} = 0
+proc lfsFileSync(c: ptr LfsConfig): cint {. cdecl .} =
+  let f = cast[File](c.context)
+  f.flushFile()
+  return 0
 
 proc lfsFileErase(c: ptr LfsConfig; chunk: LfsChunkT): cint {. cdecl .} =
   let f = cast[File](c.context)

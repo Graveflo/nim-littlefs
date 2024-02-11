@@ -2,6 +2,8 @@ import ../bindings/lfs
 import ./common
 import ../misc
 
+export CharArrayLike
+
 proc conv(fm: FileMode): cint {. compileTime .} =
   case fm
   of fmWrite:
@@ -56,12 +58,10 @@ proc truncate*(file: ref LfsFile, size: int) =
   LFS_ERR_MAYBE: lfs_file_truncate(file.lfs, file.file.addr, size.LfsSizeT)
 
 proc tell*(file: ref LfsFile): int =
-  result = lfs_file_tell(file.lfs, file.file.addr)
-  LFS_ERR_MAYBE(result)
+  LFS_ERR_MAYBE(result): lfs_file_tell(file.lfs, file.file.addr)
 
 proc readRaw*(lfs: ptr LfsT, file: ptr LfsFileT, p: pointer, len: int): int =
-  result = lfsFileRead(lfs, file, p, len.LfsSizeT)
-  LFS_ERR_MAYBE(result)
+  LFS_ERR_MAYBE(result): lfsFileRead(lfs, file, p, len.LfsSizeT)
 
 proc readRaw*(file: ref LfsFile, p: pointer, len: int): int =
   readRaw(file.lfs, file.file.addr, p, len)
@@ -69,7 +69,9 @@ proc readRaw*(file: ref LfsFile, p: pointer, len: int): int =
 proc read*[T](lfs: ptr LfsT, file: ptr LfsFileT): T
 
 proc readImpl*[T](lfs: ptr LfsT, file: ptr LfsFileT, tds: typedesc[T]): T =
-  discard readRaw(lfs, file, result.addr, sizeof(T))
+  var tmp: T
+  discard readRaw(lfs, file, tmp.addr, sizeof(T))
+  return tmp
 
 proc readImpl*[T: string](lfs: ptr LfsT, file: ptr LfsFileT, tds: typedesc[T]): T =
   result.setLen(read[int](lfs, file))
@@ -94,8 +96,7 @@ proc readAll*(file: ref LfsFile): string =
   readString(file, file.size)
 
 proc writeRaw*(lfs: ptr LfsT, file: ptr LfsFileT, p: pointer, size: int): int {. discardable .} =
-  result = lfs_file_write(lfs, file, p, size.LfsSizeT)
-  LFS_ERR_MAYBE(result)
+  LFS_ERR_MAYBE(result): lfs_file_write(lfs, file, p, size.LfsSizeT).int
 
 proc writeRaw*(file: ref LfsFile, p: pointer, size: int): int {. discardable .} =
   writeRaw(file.lfs, file.file.addr, p, size)
@@ -106,22 +107,28 @@ proc writeRaw*[T](lfs: ptr LfsT, file: ptr LfsFileT, p: ptr T): int {. discardab
 proc writeRaw*[T](file: ref LfsFile, p: ptr T): int {. discardable .} =
   writeRaw(file.lfs, file.file.addr, p, sizeof(T).LfsSizeT)
 
-proc writeString*[T](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
+proc writeString*[T: CharArrayLike](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
   writeRaw(lfs, file, val[0].addr, len(val))
 
-proc writeString*[T](file: ref LfsFile, val: T): int {. discardable .} =
+proc writeString*[T: CharArrayLike](file: ref LfsFile, val: T): int {. discardable .} =
   writeString(file.lfs, file.file.addr, val)
 
-proc write*[T: string](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
+proc write*[T: cstring](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
+  writeRaw(lfs, file, val, len(val)+1)
+
+proc write*[T: CharArrayLike](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
   mixin write
   result = write(lfs, file, len(val))
+  if LfsErrNo < LFS_ERR_OK: return
   result += writeString(lfs, file, val)
 
 proc write*[T: seq](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
   mixin write
   result = write(lfs, file, len(val))
+  if LfsErrNo < LFS_ERR_OK: return
   for x in val:
     result += write(lfs, file, x)
+    if LfsErrNo < LFS_ERR_OK: return
 
 proc write*[T](lfs: ptr LfsT, file: ptr LfsFileT, val: T): int {. discardable .} =
   writeRaw(lfs, file, val.addr)

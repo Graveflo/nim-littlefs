@@ -2,11 +2,12 @@ import ./common
 import ./dirs
 import ./files
 import ../bindings/lfs
+import ../misc
 
-export files
-export dirs
-export common
-export LfsErrorCode, LfsErrNo, LfsOpenFlags, LfsWhenceFlags
+export
+  files, dirs, common, misc
+export
+  LfsErrorCode, LfsErrNo, LfsOpenFlags, LfsWhenceFlags, LfsConfig, LfsT, LfsFileT
 export LFS_ERR_CORRUPT,
   LFS_ERR_NOATTR,
   LFS_ERR_NOTEMPTY,

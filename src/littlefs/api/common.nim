@@ -30,6 +30,15 @@ var LfsErrNo* {. threadvar .}: LfsErrorCode
 
 proc `==`*(a,b: LfsType): bool {. borrow .}
 proc `==`*(a,b: LfsErrorCode): bool {. borrow .}
+proc `<`*(a,b: LfsErrorCode): bool {. borrow .}
+proc `==`*(a:SomeInteger,b: LfsErrorCode): bool=
+  a.LfsErrorCode == b
+proc `<`*(a: SomeInteger,b: LfsErrorCode): bool=
+  a.LfsErrorCode < b
+proc `==`*(b: LfsErrorCode,a:SomeInteger): bool=
+  a.LfsErrorCode == b
+proc `<`*(b: LfsErrorCode, a: SomeInteger): bool=
+  a.LfsErrorCode < b
 
 template LFS_ERR_MAYBE*(err: LfsErrorCode | int | cint): untyped =
   LfsErrNo = err.LfsErrorCode
@@ -41,9 +50,9 @@ template LFS_ERR_MAYBE*(err: LfsErrorCode | int | cint): untyped =
 #    `setme` = err.LfsErrorCode
 
 template LFS_ERR_MAYBE*(setme, body: untyped): untyped=
-  let err = LfsErrorCode(body)
-  LFS_ERR_MAYBE(err)
-  `setme` = err
+  let err = body
+  LFS_ERR_MAYBE(LfsErrorCode(err))
+  `setme` = typeof(`setme`)(err)
 
 template LFS_ERR_MAYBE*(err: LfsErrorCode | int | cint, msg: string): untyped=
   LFS_ERR_MAYBE(err)
@@ -64,7 +73,9 @@ proc closeAllOpen(x: ptr LfsT, kind: LfsType)=
   elif kind == LFS_TYPE_REG:
     op(lfs_file_close, LfsFileT)
 
-proc boot(lfs: ptr LfsT, cfg: ptr LfsConfig): int =
+proc boot(lfs: ptr LfsT, cfg: ptr LfsConfig, force_format=false): int =
+  if force_format:
+    discard lfsFormat(lfs, cfg)
   let firstMountErr = lfsMount(lfs, cfg)
   if firstMountErr < 0:
     discard lfsFormat(lfs, cfg)
@@ -87,8 +98,8 @@ proc `=destroy`(x: LittleFs) =
 proc `=copy`(x: var LittleFs, y: LittleFs) {. error .}
 proc `=dup`(x: LittleFs): LittleFs {. error .}
 
-proc boot*(lfs: var LittleFs): int {. discardable .} =
-  result = boot(lfs.lfs.addr, lfs.cfg.addr)
+proc boot*(lfs: var LittleFs, force_format=false): int {. discardable .} =
+  result = boot(lfs.lfs.addr, lfs.cfg.addr, force_format=force_format)
 
 proc `or`*(a, b: CompatFEnumT | cint): cint = a.cint or b.cint
 proc `|`*(a, b: CompatFEnumT | cint): cint = a.cint or b.cint
